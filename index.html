@@ -1657,6 +1657,7 @@ function resetAccountSearch() {
 function onStrategyChange() {
   onCboChange();
   if (typeof onUnitBudgetTypeChange === 'function') onUnitBudgetTypeChange();
+  onOcpxChange();
 }
 
 function onCboChange() {
@@ -1702,12 +1703,19 @@ function onMarketingTypeChange() {
   if (pixelRow) pixelRow.hidden = mt !== '2';
 }
 
-// ROAS转化目标(123,130)使用roiRatio出价，其他使用bid
+// 出价策略+转化目标联动控制出价字段显隐
+// 最低转化成本(3): 全部不显示; 成本上限(4): 103/104/105/106/123→bid, 130→roiRatio
 function onOcpxChange() {
+  var strategy = getRadioVal('campaignDeliveryStrategy');
   var ocpx = getRadioVal('unitOcpxActionType');
-  var isRoas = ocpx === '123' || ocpx === '130';
-  document.getElementById('unitBidRow').hidden = isRoas;
-  document.getElementById('unitRoiRow').hidden = !isRoas;
+  if (strategy === '3') {
+    document.getElementById('unitBidRow').hidden = true;
+    document.getElementById('unitRoiRow').hidden = true;
+  } else {
+    var isRoas = ocpx === '130';
+    document.getElementById('unitBidRow').hidden = isRoas;
+    document.getElementById('unitRoiRow').hidden = !isRoas;
+  }
 }
 
 function onUnitBudgetTypeChange() {
@@ -1873,10 +1881,16 @@ function handleSaveAdgroup() {
     budgetText = '不限';
   }
   var ocpx = getRadioVal('unitOcpxActionType');
-  var isRoas = ocpx === '123' || ocpx === '130';
-  var bidText = isRoas
-    ? 'ROI: ' + (document.getElementById('unitRoiRatio').value || '-')
-    : '$' + (document.getElementById('unitBid').value || '0') + 'USD';
+  var isRoas = ocpx === '130';
+  var bidStrategy = getRadioVal('campaignDeliveryStrategy');
+  var bidText;
+  if (bidStrategy === '3') {
+    bidText = '-（最低转化成本）';
+  } else if (isRoas) {
+    bidText = 'ROI: ' + (document.getElementById('unitRoiRatio').value || '-');
+  } else {
+    bidText = '$' + (document.getElementById('unitBid').value || '0') + 'USD';
+  }
   var scheduleType = getRadioVal('unitScheduleType');
   var startText, endText;
   if (scheduleType === '2') {
@@ -2644,7 +2658,7 @@ function handleSavePlan() {
       '<div><span style="color:var(--el-color-text-secondary)">投放版位：</span>信息流、激励</div>' +
       '<div><span style="color:var(--el-color-text-secondary)">转化目标：</span>查看内容</div>' +
       '<div><span style="color:var(--el-color-text-secondary)">出价方式：</span>OCPM</div>' +
-      '<div><span style="color:var(--el-color-text-secondary)">出价金额：</span>$11.00USD</div>' +
+      '<div><span style="color:var(--el-color-text-secondary)">出价金额：</span>' + (getRadioVal('campaignDeliveryStrategy') === '3' ? '-（最低转化成本）' : '$11.00USD') + '</div>' +
       '<div><span style="color:var(--el-color-text-secondary)">预算类型：</span>不限</div>' +
       '<div><span style="color:var(--el-color-text-secondary)">排期开始：</span>今天开始</div>' +
       '<div><span style="color:var(--el-color-text-secondary)">排期结束：</span>持续投放</div>' +
@@ -2951,7 +2965,7 @@ setInterval(updateUTCTime, 60000);
 initSchedule();
 initTargetingDropdowns();
 onCboChange();
-
+onOcpxChange();
 // ====== Template ======
 var templateListData = [
   { name: 'kahui', createTime: '2026-03-19 10:23:49' },
