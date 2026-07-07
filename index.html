@@ -275,6 +275,12 @@ button{cursor:pointer;border:none}
 .schedule-result{margin-top:4px;font-size:11px;color:var(--el-color-text-secondary)}
 .schedule-result span{color:var(--el-color-primary)}
 
+/* ====== Tooltip ====== */
+.has-tooltip{position:relative;cursor:help;border-bottom:1px dashed var(--el-color-text-secondary)}
+.has-tooltip .tooltip-text{visibility:hidden;opacity:0;position:absolute;bottom:calc(100% + 8px);left:0;background:#303133;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.6;white-space:pre-line;width:320px;z-index:9999;pointer-events:none;transition:opacity .2s}
+.has-tooltip .tooltip-text::after{content:'';position:absolute;top:100%;left:20px;border:5px solid transparent;border-top-color:#303133}
+.has-tooltip:hover .tooltip-text{visibility:visible;opacity:1}
+
 /* ====== Empty state ====== */
 .el-empty{padding:40px 0;text-align:center}
 .el-empty__image svg{width:60px;height:60px}
@@ -1079,6 +1085,22 @@ button{cursor:pointer;border:none}
         </div>
       </div>
     </div>
+    <div class="el-card is-always-shadow mb15" style="overflow:visible">
+      <div class="el-card__header"><span class="fw6 has-tooltip">多账户分配规则<span class="tooltip-text">全量分配：计划数 = 定向包数，一个计划下的广告组 = 创意包，一个广告组下的广告数 = 一个创意包素材数
+按创意分配：计划数 = 创意包 × 定向包，一个计划下一个广告组，一个广告组下的广告数 = 一个创意包素材数（标题包规则自动匹配）</span></span></div>
+      <div class="el-card__body">
+        <div class="el-radio-group" id="creativeDistRule" style="display:flex;gap:8px">
+          <label class="el-radio-button el-radio-button--small is-active">
+            <input class="el-radio-button__original-radio" type="radio" name="creativeDistRule" value="all" checked onclick="selectRadioBtn(this)">
+            <span class="el-radio-button__inner">全量分配</span>
+          </label>
+          <label class="el-radio-button el-radio-button--small">
+            <input class="el-radio-button__original-radio" type="radio" name="creativeDistRule" value="creative" onclick="selectRadioBtn(this)">
+            <span class="el-radio-button__inner">按创意分配</span>
+          </label>
+        </div>
+      </div>
+    </div>
     <div class="el-card is-always-shadow mb15">
       <div class="el-card__header"><span class="fw6">发布身份</span></div>
       <div class="el-card__body">
@@ -1099,6 +1121,11 @@ button{cursor:pointer;border:none}
           </select>
         </div>
       </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 14px;background:#f5f7fa;border-radius:6px">
+      <span style="font-size:12px;color:var(--el-color-text-regular);white-space:nowrap">每组素材数</span>
+      <div class="el-input el-input--small" style="width:80px"><div class="el-input__wrapper"><input class="el-input__inner" id="batchGroupSize" value="3" type="number" min="1" max="10"></div></div>
+      <button class="el-button el-button--primary el-button--small" onclick="openBatchMaterialDialog()">批量创建作品</button>
     </div>
     <div id="creativeAdgroupList"></div>
     <div style="margin-top:8px">
@@ -2273,6 +2300,7 @@ function copyCreativeAdgroup(seq) {
 }
 
 var _materialDialogSeq = null;
+var _batchMaterialMode = false;
 
 var mockMaterials = [
   { id:'429', name:'429_chunya_QT_VN_PA299_260605_FM...', vnName:'(Lồng tiếng) Nguyên Yêu Thực Cường', w:1080, h:1920, size:'350MB', duration:'00:19:08', source:'椿芽', time:'2026-06-04 13:38:53' },
@@ -2357,18 +2385,29 @@ function switchKwaiTab(tab) {
 }
 
 function confirmKwaiWorkSelect() {
-  if (!_materialDialogSeq) return;
-  var item = creativeAdgroups.find(function(it){ return it._seq === _materialDialogSeq; });
-  if (!item) return;
   var selectedIds = Object.keys(kwaiWorkSelected);
-  selectedIds.forEach(function(id) {
-    var w = mockKwaiWorks.find(function(ww){ return ww.id === id; });
-    if (w) item.materials.push({ id: w.id, name: 'Kwai作品_' + w.id });
-  });
-  closeDialog('dialogKwaiWork');
-  _materialDialogSeq = null;
-  renderCreativeAdgroups();
-  showMsg('已添加 ' + selectedIds.length + ' 个作品', 'success');
+  if (!selectedIds.length) { closeDialog('dialogKwaiWork'); return; }
+  if (_batchMaterialMode) {
+    var materials = selectedIds.map(function(id) {
+      var w = mockKwaiWorks.find(function(ww){ return ww.id === id; });
+      return w ? { id: w.id, name: 'Kwai作品_' + w.id } : null;
+    }).filter(Boolean);
+    batchCreateAdgroups(materials);
+    closeDialog('dialogKwaiWork');
+    _batchMaterialMode = false;
+  } else {
+    if (!_materialDialogSeq) return;
+    var item = creativeAdgroups.find(function(it){ return it._seq === _materialDialogSeq; });
+    if (!item) return;
+    selectedIds.forEach(function(id) {
+      var w = mockKwaiWorks.find(function(ww){ return ww.id === id; });
+      if (w) item.materials.push({ id: w.id, name: 'Kwai作品_' + w.id });
+    });
+    closeDialog('dialogKwaiWork');
+    _materialDialogSeq = null;
+    renderCreativeAdgroups();
+    showMsg('已添加 ' + selectedIds.length + ' 个作品', 'success');
+  }
 }
 
 function onCreativeWorkTypeChange(radio, idx, newType) {
@@ -2383,9 +2422,40 @@ function onCreativeWorkTypeChange(radio, idx, newType) {
   renderCreativeAdgroups();
 }
 
+function openBatchMaterialDialog() {
+  _batchMaterialMode = true;
+  _materialDialogSeq = null;
+  materialFiltered = mockMaterials.slice();
+  materialSelected = {};
+  renderMaterialCards();
+  openDialog('dialogMaterial');
+}
+
+function batchCreateAdgroups(materials) {
+  var groupSize = parseInt(document.getElementById('batchGroupSize').value) || 3;
+  if (groupSize < 1) groupSize = 1;
+  var nameBase = (document.getElementById('unitName') && document.getElementById('unitName').value) || 'unit';
+  var totalGroups = 0;
+  for (var i = 0; i < materials.length; i += groupSize) {
+    creativeAdgroupSeq++;
+    var chunk = materials.slice(i, i + groupSize);
+    var item = {
+      _seq: creativeAdgroupSeq,
+      adgroupName: nameBase + '-' + String(creativeAdgroupSeq).padStart(3, '0'),
+      workType: 'creative',
+      materials: chunk
+    };
+    creativeAdgroups.push(item);
+    totalGroups++;
+  }
+  renderCreativeAdgroups();
+  showMsg('已创建 ' + totalGroups + ' 个广告组，共 ' + materials.length + ' 个素材', 'success');
+}
+
 function addCreativeMaterial(seq) {
   var item = creativeAdgroups.find(function(it){ return it._seq === seq; });
   if (!item) return;
+  _batchMaterialMode = false;
   _materialDialogSeq = seq;
   if (item.workType === 'select') {
     // Kwai原生作品 dialog
@@ -2453,18 +2523,29 @@ function searchMaterials() {
 }
 
 function confirmMaterialSelect() {
-  if (!_materialDialogSeq) return;
-  var item = creativeAdgroups.find(function(it){ return it._seq === _materialDialogSeq; });
-  if (!item) return;
   var selectedIds = Object.keys(materialSelected);
-  selectedIds.forEach(function(id) {
-    var m = mockMaterials.find(function(mm){ return mm.id === id; });
-    if (m) item.materials.push({ id: m.id, name: m.name });
-  });
-  closeDialog('dialogMaterial');
-  _materialDialogSeq = null;
-  renderCreativeAdgroups();
-  showMsg('已添加 ' + selectedIds.length + ' 个素材', 'success');
+  if (!selectedIds.length) { closeDialog('dialogMaterial'); return; }
+  if (_batchMaterialMode) {
+    var materials = selectedIds.map(function(id) {
+      var m = mockMaterials.find(function(mm){ return mm.id === id; });
+      return m ? { id: m.id, name: m.name } : null;
+    }).filter(Boolean);
+    batchCreateAdgroups(materials);
+    closeDialog('dialogMaterial');
+    _batchMaterialMode = false;
+  } else {
+    if (!_materialDialogSeq) return;
+    var item = creativeAdgroups.find(function(it){ return it._seq === _materialDialogSeq; });
+    if (!item) return;
+    selectedIds.forEach(function(id) {
+      var m = mockMaterials.find(function(mm){ return mm.id === id; });
+      if (m) item.materials.push({ id: m.id, name: m.name });
+    });
+    closeDialog('dialogMaterial');
+    _materialDialogSeq = null;
+    renderCreativeAdgroups();
+    showMsg('已添加 ' + selectedIds.length + ' 个素材', 'success');
+  }
 }
 
 function removeCreativeMaterial(seq, matIdx) {
