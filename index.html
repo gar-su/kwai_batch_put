@@ -263,6 +263,12 @@ button{cursor:pointer;border:none}
 /* ====== Hidden override (inline display:flex 会覆盖 hidden 属性) ====== */
 [hidden]{display:none!important}
 
+/* ====== Account Tabs ====== */
+.account-tabs{display:flex;gap:0;border-bottom:1px solid var(--el-border-color);margin-bottom:12px}
+.account-tab{padding:8px 16px;font-size:12px;color:var(--el-color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.account-tab:hover{color:var(--el-color-primary)}
+.account-tab.active{color:var(--el-color-primary);border-bottom-color:var(--el-color-primary);font-weight:600}
+
 /* ====== Schedule Grid ====== */
 .schedule-grid{border:1px solid var(--el-border-color);border-radius:4px;overflow:hidden;width:max-content}
 .schedule-head{display:flex;background:#f9fafb}
@@ -571,8 +577,6 @@ button{cursor:pointer;border:none}
         <div style="flex:1;padding:12px 14px;font-size:12px;line-height:2;overflow-y:auto" id="configCreativeData">
           <div><span style="color:var(--el-color-text-secondary)">行动号召：</span>了解详情</div>
           <div><span style="color:var(--el-color-text-secondary)">广告描述：</span>-</div>
-          <div><span style="color:var(--el-color-text-secondary)">发布身份：</span>使用Kwai账户投放原生作品</div>
-          <div><span style="color:var(--el-color-text-secondary)">身份来源：</span>Netshort</div>
           <div><span style="color:var(--el-color-text-secondary)">广告组数：</span>0</div>
           <div><span style="color:var(--el-color-text-secondary)">素材总数：</span>0</div>
           <div><span style="color:var(--el-color-text-secondary)">广告分类：</span>效果广告</div>
@@ -589,7 +593,10 @@ button{cursor:pointer;border:none}
 
     </div>
 
-    <!-- 预览区 -->
+    <!-- 发布身份配置 + 预览区 -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <button class="el-button el-button--small" style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="openPublisherConfigDialog()">发布身份配置</button>
+    </div>
     <div class="el-card is-never-shadow">
       <div class="el-card__header">
         <div class="f-b-c">
@@ -606,6 +613,7 @@ button{cursor:pointer;border:none}
           </div>
         </div>
       </div>
+      <div id="previewAccountTabs" class="account-tabs" style="padding:0 15px"></div>
       <div class="el-card__body" style="padding:0;overflow-x:auto">
         <table class="el-table">
           <thead class="el-table__header">
@@ -1101,27 +1109,6 @@ button{cursor:pointer;border:none}
         </div>
       </div>
     </div>
-    <div class="el-card is-always-shadow mb15">
-      <div class="el-card__header"><span class="fw6">发布身份</span></div>
-      <div class="el-card__body">
-        <div class="el-radio-group" id="creativePublisherType" style="margin-bottom:12px">
-          <label class="el-radio-button el-radio-button--small"><input class="el-radio-button__original-radio" type="radio" name="creativePublisherType" value="custom" onclick="selectRadioBtn(this);onPublisherTypeChange()"><span class="el-radio-button__inner">自定义身份</span></label>
-          <label class="el-radio-button el-radio-button--small is-active"><input class="el-radio-button__original-radio" type="radio" name="creativePublisherType" value="native" checked onclick="selectRadioBtn(this);onPublisherTypeChange()"><span class="el-radio-button__inner">使用Kwai账户投放原生作品</span></label>
-        </div>
-        <div id="creativeCustomSection" hidden style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--el-color-text-regular)">自定义身份</span>
-          <select class="select-native" id="creativeCustomIdentity" style="width:180px" onchange="onCreativeIdentityChange()">
-            <option value="netshort">Netshort</option>
-          </select>
-        </div>
-        <div id="creativeNativeSection" style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--el-color-text-regular)">Kwai 账户</span>
-          <select class="select-native" id="creativeKwaiAccount" style="width:180px" onchange="onCreativeAccountChange()">
-            <option value="netshort">Netshort</option>
-          </select>
-        </div>
-      </div>
-    </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 14px;background:#f5f7fa;border-radius:6px">
       <span style="font-size:12px;color:var(--el-color-text-regular);white-space:nowrap">每组素材数</span>
       <div class="el-input el-input--small" style="width:80px"><div class="el-input__wrapper"><input class="el-input__inner" id="batchGroupSize" value="3" type="number" min="1" max="10"></div></div>
@@ -1419,6 +1406,34 @@ button{cursor:pointer;border:none}
     </div>
     <div class="el-dialog__footer">
       <button class="el-button el-button--small" onclick="closeDialog('dialogSelectTemplate')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== DIALOG: 发布身份配置 ====== -->
+<div class="el-dialog-overlay" id="dialogPublisherOverlay" onclick="if(event.target===this)closeDialog('dialogPublisher')">
+  <div class="el-dialog" id="dialogPublisher" style="width:700px">
+    <div class="el-dialog__header">
+      <span>发布身份配置</span>
+      <span class="el-dialog__close" onclick="closeDialog('dialogPublisher')">×</span>
+    </div>
+    <div class="el-dialog__body">
+      <div style="margin-bottom:10px;font-size:12px;color:var(--el-color-text-secondary)">为每个账户配置发布身份，未配置的账户默认使用 Kwai 原生作品身份</div>
+      <div style="border:1px solid var(--el-border-color-light);border-radius:8px;overflow:hidden">
+        <table class="el-table">
+          <thead class="el-table__header">
+            <tr>
+              <th class="el-table__cell is-center" style="width:40%">账户</th>
+              <th class="el-table__cell is-center">发布身份</th>
+            </tr>
+          </thead>
+          <tbody id="publisherConfigTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="el-dialog__footer">
+      <button class="el-button el-button--small" onclick="closeDialog('dialogPublisher')">取消</button>
+      <button class="el-button el-button--primary el-button--small" onclick="confirmPublisherConfig()">确定</button>
     </div>
   </div>
 </div>
@@ -2230,57 +2245,90 @@ function updateConfigButtons() {
 }
 updateConfigButtons();
 
+// ====== Account Publisher Config ======
+var accountPublisherConfig = {}; // { accountKey: { type:'native'|'custom', identityVal, accountVal } }
+var _activePreviewTab = null;
+
+function getAccountKey(el) {
+  return (el.textContent || '').replace(/✕/g,'').trim();
+}
+
+function getAccountPublisherType(accountKey) {
+  var cfg = accountPublisherConfig[accountKey];
+  return cfg ? cfg.type : 'native';
+}
+
+function openPublisherConfigDialog() {
+  renderPublisherConfigTable();
+  openDialog('dialogPublisher');
+}
+
+function renderPublisherConfigTable() {
+  var tbody = document.getElementById('publisherConfigTableBody');
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  if (!tags.length) {
+    tbody.innerHTML = '<tr><td class="el-table__cell" colspan="2" style="padding:40px;text-align:center;color:var(--el-color-text-placeholder)">暂无账户，请先在账号卡片中添加账户</td></tr>';
+    return;
+  }
+  tbody.innerHTML = Array.from(tags).map(function(tag) {
+    var key = getAccountKey(tag);
+    var safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+    var cfg = accountPublisherConfig[key] || { type: 'native', identityVal: 'netshort', accountVal: 'netshort' };
+    var isNative = cfg.type === 'native';
+    return '<tr>' +
+      '<td class="el-table__cell">' + key + '</td>' +
+      '<td class="el-table__cell">' +
+        '<div class="el-radio-group">' +
+          '<label class="el-radio-button el-radio-button--small' + (isNative ? ' is-active' : '') + '"><input class="el-radio-button__original-radio" type="radio" name="pubType_' + safeKey + '" value="native"' + (isNative ? ' checked' : '') + ' onclick="selectRadioBtn(this);onPubTypeChange(\'' + safeKey + '\')"><span class="el-radio-button__inner">使用Kwai账户投放原生作品</span></label>' +
+          '<label class="el-radio-button el-radio-button--small' + (isNative ? '' : ' is-active') + '"><input class="el-radio-button__original-radio" type="radio" name="pubType_' + safeKey + '" value="custom"' + (isNative ? '' : ' checked') + ' onclick="selectRadioBtn(this);onPubTypeChange(\'' + safeKey + '\')"><span class="el-radio-button__inner">自定义身份</span></label>' +
+        '</div>' +
+        '<span id="pubNative_' + safeKey + '" style="display:' + (isNative ? 'inline-flex' : 'none') + ';align-items:center;gap:8px;margin-top:8px">' +
+          '<span style="font-size:12px;color:var(--el-color-text-regular)">Kwai 账户</span>' +
+          '<select class="select-native" style="width:180px" id="pubKwaiAccount_' + safeKey + '"><option value="netshort">Netshort</option></select>' +
+        '</span>' +
+        '<span id="pubCustom_' + safeKey + '" style="display:' + (isNative ? 'none' : 'inline-flex') + ';align-items:center;gap:8px;margin-top:8px">' +
+          '<span style="font-size:12px;color:var(--el-color-text-regular)">自定义身份</span>' +
+          '<select class="select-native" style="width:180px" id="pubIdentity_' + safeKey + '"><option value="netshort">Netshort</option></select>' +
+        '</span>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function onPubTypeChange(safeKey) {
+  var nativeRadio = document.querySelector('input[name="pubType_' + safeKey + '"][value="native"]');
+  var isNative = nativeRadio && nativeRadio.checked;
+  document.getElementById('pubNative_' + safeKey).style.display = isNative ? 'inline-flex' : 'none';
+  document.getElementById('pubCustom_' + safeKey).style.display = isNative ? 'none' : 'inline-flex';
+}
+
+function confirmPublisherConfig() {
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  tags.forEach(function(tag) {
+    var key = getAccountKey(tag);
+    var safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+    var nativeRadio = document.querySelector('input[name="pubType_' + safeKey + '"][value="native"]');
+    var type = nativeRadio && nativeRadio.checked ? 'native' : 'custom';
+    var kwaiSel = document.getElementById('pubKwaiAccount_' + safeKey);
+    var identitySel = document.getElementById('pubIdentity_' + safeKey);
+    accountPublisherConfig[key] = {
+      type: type,
+      identityVal: identitySel ? identitySel.value : 'netshort',
+      accountVal: kwaiSel ? kwaiSel.value : 'netshort'
+    };
+  });
+  closeDialog('dialogPublisher');
+  updatePreviewTable();
+  showMsg('发布身份配置已保存', 'success');
+}
+
 // ====== Creative ======
 var creativeAdgroups = [];
 var creativeAdgroupSeq = 0;
-var _prevPublisherType = 'native';
-var _prevIdentityVal = 'netshort';
-var _prevAccountVal = 'netshort';
-
-function onPublisherTypeChange() {
-  var v = getRadioVal('creativePublisherType');
-  if (creativeAdgroups.length && !confirm('切换发布身份将清空已配置的素材，是否继续？')) {
-    // revert
-    var prevInput = document.querySelector('#creativePublisherType input[value="' + _prevPublisherType + '"]');
-    if (prevInput) selectRadioBtn(prevInput);
-    return;
-  }
-  _prevPublisherType = v;
-  document.getElementById('creativeCustomSection').hidden = v !== 'custom';
-  document.getElementById('creativeNativeSection').hidden = v !== 'native';
-  creativeAdgroups = [];
-  creativeAdgroupSeq = 0;
-  renderCreativeAdgroups();
-}
-
-function onCreativeIdentityChange() {
-  var sel = document.getElementById('creativeCustomIdentity');
-  if (creativeAdgroups.length && !confirm('切换身份将清空已配置的素材，是否继续？')) {
-    sel.value = _prevIdentityVal;
-    return;
-  }
-  _prevIdentityVal = sel.value;
-  creativeAdgroups = [];
-  creativeAdgroupSeq = 0;
-  renderCreativeAdgroups();
-}
-
-function onCreativeAccountChange() {
-  var sel = document.getElementById('creativeKwaiAccount');
-  if (creativeAdgroups.length && !confirm('切换Kwai账户将清空已配置的素材，是否继续？')) {
-    sel.value = _prevAccountVal;
-    return;
-  }
-  _prevAccountVal = sel.value;
-  creativeAdgroups = [];
-  creativeAdgroupSeq = 0;
-  renderCreativeAdgroups();
-}
 
 function addCreativeAdgroup() {
-  var pubType = getRadioVal('creativePublisherType');
   creativeAdgroupSeq++;
-  var item = { _seq: creativeAdgroupSeq, adgroupName: 'unit-' + String(creativeAdgroupSeq).padStart(3,'0'), workType: pubType === 'native' ? 'select' : 'creative', materials: [] };
+  var item = { _seq: creativeAdgroupSeq, adgroupName: 'unit-' + String(creativeAdgroupSeq).padStart(3,'0'), workType: 'creative', materials: [] };
   creativeAdgroups.push(item);
   renderCreativeAdgroups();
 }
@@ -2559,7 +2607,6 @@ function renderCreativeAdgroups() {
     container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--el-color-text-placeholder);font-size:13px">暂无广告组，请点击下方按钮添加</div>';
     return;
   }
-  var pubType = getRadioVal('creativePublisherType');
   container.innerHTML = creativeAdgroups.map(function(item, idx) {
     var materialsHtml = item.materials.map(function(m, mi) {
       return '<div style="width:100px;flex-shrink:0">' +
@@ -2573,13 +2620,6 @@ function renderCreativeAdgroups() {
     var addBoxStyle = item.materials.length === 0
       ? 'width:100px;height:140px;border:2px dashed #94bfff;display:flex;align-items:center;justify-content:center;font-size:32px;color:#1875ff;cursor:pointer;border-radius:4px;flex-shrink:0'
       : 'width:100px;height:140px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:32px;color:#333;cursor:pointer;border-radius:4px;flex-shrink:0';
-    var workTypeHtml = '';
-    if (pubType === 'native') {
-      workTypeHtml = '<div class="el-radio-group" style="margin-right:12px">' +
-        '<label class="el-radio-button el-radio-button--small' + (item.workType==='select'?' is-active':'') + '" style="font-size:11px"><input class="el-radio-button__original-radio" type="radio" name="creativeWorkType_' + item._seq + '" value="select"' + (item.workType==='select'?' checked':'') + ' onclick="onCreativeWorkTypeChange(this,' + idx + ',\'select\')"><span class="el-radio-button__inner">选择作品</span></label>' +
-        '<label class="el-radio-button el-radio-button--small' + (item.workType==='create'?' is-active':'') + '" style="font-size:11px"><input class="el-radio-button__original-radio" type="radio" name="creativeWorkType_' + item._seq + '" value="create"' + (item.workType==='create'?' checked':'') + ' onclick="onCreativeWorkTypeChange(this,' + idx + ',\'create\')"><span class="el-radio-button__inner">创建作品</span></label>' +
-        '</div>';
-    }
     return '<div class="el-card is-always-shadow mb15" style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #f0f0f0">' +
         '<div style="display:flex;align-items:center">' +
@@ -2587,7 +2627,6 @@ function renderCreativeAdgroups() {
         '</div>' +
         '<div style="display:flex;align-items:center;gap:14px">' +
           '<span style="color:#444;font-size:13px">已选 <b>' + item.materials.length + '</b> 个素材</span>' +
-          workTypeHtml +
           '<span style="color:#1875ff;cursor:pointer;font-size:16px" title="复制" onclick="copyCreativeAdgroup(' + item._seq + ')">📋</span>' +
           '<span style="color:#f53f3f;cursor:pointer;font-size:16px" title="删除" onclick="removeCreativeAdgroup(' + item._seq + ')">🗑</span>' +
         '</div>' +
@@ -2602,16 +2641,6 @@ function renderCreativeAdgroups() {
 
 function handleSaveCreative() {
   closeDrawer('drawer-creative');
-  var pubType = getRadioVal('creativePublisherType');
-  var pubText = pubType === 'native' ? '使用Kwai账户投放原生作品' : '自定义身份';
-  var identityText = '';
-  if (pubType === 'custom') {
-    var idSel = document.getElementById('creativeCustomIdentity');
-    identityText = idSel.options[idSel.selectedIndex].text;
-  } else {
-    var acSel = document.getElementById('creativeKwaiAccount');
-    identityText = acSel.options[acSel.selectedIndex].text;
-  }
   var ctaMap = {4:'更多精彩',5:'了解详情'};
   var ctaText = ctaMap[document.getElementById('creativeCta').value] || '了解详情';
   var descText = document.getElementById('creativeDesc').value || '-';
@@ -2620,8 +2649,6 @@ function handleSaveCreative() {
   dataEl.innerHTML =
     '<div><span style="color:var(--el-color-text-secondary)">行动号召：</span>' + ctaText + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">广告描述：</span>' + descText + '</div>' +
-    '<div><span style="color:var(--el-color-text-secondary)">发布身份：</span>' + pubText + '</div>' +
-    '<div><span style="color:var(--el-color-text-secondary)">身份来源：</span>' + identityText + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">广告组数：</span>' + creativeAdgroups.length + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">素材总数：</span>' + totalMats + '</div>';
   updatePreviewTable();
@@ -2695,8 +2722,6 @@ function handleSavePlan() {
   document.getElementById('configCreativeData').innerHTML =
     '<div><span style="color:var(--el-color-text-secondary)">行动号召：</span>了解详情</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">广告描述：</span>-</div>' +
-    '<div><span style="color:var(--el-color-text-secondary)">发布身份：</span>使用Kwai账户投放原生作品</div>' +
-    '<div><span style="color:var(--el-color-text-secondary)">身份来源：</span>Netshort</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">广告组数：</span>0</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">素材总数：</span>0</div>';
   _campaignSaved = true;
@@ -2711,13 +2736,42 @@ function selectTemplate() {
 }
 
 // ====== Preview Table (inside drawer) ======
-function updatePreviewTable() {
+function renderPreviewTabs() {
+  var tabContainer = document.getElementById('previewAccountTabs');
+  if (!tabContainer) return;
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  var accounts = [];
+  tags.forEach(function(tag) {
+    accounts.push((tag.textContent || '').replace(/✕/g,'').trim());
+  });
+  if (!accounts.length) {
+    tabContainer.innerHTML = '';
+    _activePreviewTab = null;
+    return;
+  }
+  // Keep active tab if still valid
+  if (!_activePreviewTab || accounts.indexOf(_activePreviewTab) === -1) {
+    _activePreviewTab = accounts[0];
+  }
+  tabContainer.innerHTML = accounts.map(function(acc) {
+    var cls = acc === _activePreviewTab ? 'account-tab active' : 'account-tab';
+    return '<span class="' + cls + '" onclick="switchPreviewTab(\'' + acc.replace(/'/g,"\\'") + '\')">' + acc + '</span>';
+  }).join('');
+}
+
+function switchPreviewTab(accountKey) {
+  _activePreviewTab = accountKey;
+  renderPreviewTableForAccount();
+  renderPreviewTabs();
+}
+
+function renderPreviewTableForAccount() {
   var tbody = document.getElementById('previewTableBody');
   var tags = document.querySelectorAll('#accountTags .account-tag');
-  if (!tags.length) {
+  if (!tags.length || !_activePreviewTab) {
     tbody.innerHTML = '<tr><td class="el-table__cell" colspan="14" style="padding:40px;text-align:center;color:var(--el-color-text-placeholder)">暂无数据</td></tr>';
-    var stats = document.querySelector('#drawer-batch .el-card__header .fs12');
-    if (stats) stats.innerHTML = '预计生成<b style="color:var(--el-color-text-primary)">0</b>条广告<span style="margin-left:8px">计划数量：<b style="color:var(--el-color-text-primary)">0</b></span><span style="margin-left:8px">广告组数量：<b style="color:var(--el-color-text-primary)">0</b></span><span style="margin-left:8px">广告数量：<b style="color:var(--el-color-text-primary)">0</b></span>';
+    var statsEl = document.querySelector('#drawer-batch .el-card__header .fs12');
+    if (statsEl) statsEl.innerHTML = '预计生成<b style="color:var(--el-color-text-primary)">0</b>条广告<span style="margin-left:8px">计划数量：<b style="color:var(--el-color-text-primary)">0</b></span><span style="margin-left:8px">广告组数量：<b style="color:var(--el-color-text-primary)">0</b></span><span style="margin-left:8px">广告数量：<b style="color:var(--el-color-text-primary)">0</b></span>';
     return;
   }
   var campaignName = (document.getElementById('campaignName') && document.getElementById('campaignName').value) || 'testCampaignName';
@@ -2725,7 +2779,6 @@ function updatePreviewTable() {
   var btypeMap = {1:'不限',2:'每日固定预算'};
   var budgetType = getRadioVal('campaignBudgetType') || '1';
   var deliveryStrategy = getRadioVal('campaignDeliveryStrategy') || '3';
-  var marketingType = getRadioVal('campaignMarketingType') || '2';
   var campaignType = getRadioVal('campaignCampaignType') || '2';
   var campaignTypeMap = {3:'转化'};
   var unitName = (document.getElementById('unitName') && document.getElementById('unitName').value) || 'unitAddName-001';
@@ -2744,7 +2797,8 @@ function updatePreviewTable() {
     unitStartText = '今天开始';
     unitEndText = '持续投放';
   }
-  var pubTypeText = getRadioVal('creativePublisherType') === 'custom' ? '自定义身份' : 'Kwai原生作品';
+  var pubType = getAccountPublisherType(_activePreviewTab);
+  var pubTypeText = pubType === 'custom' ? '自定义身份' : 'Kwai原生作品';
   var creativeAgCount = creativeAdgroups.length || 0;
   var creativeAgNames = creativeAdgroups.map(function(it){ return it.adgroupName; }).join('、') || '-';
   var tgtNames = [];
@@ -2753,42 +2807,44 @@ function updatePreviewTable() {
     if (pkg) tgtNames.push(pkg.name);
   });
   if (!tgtNames.length) tgtNames.push('不限');
-  var tgtText = tgtNames.join('、');
   var totalMaterialCount = creativeAdgroups.reduce(function(s, g) { return s + g.materials.length; }, 0);
   var rows = [];
   var rowIdx = 0;
-  tags.forEach(function(tag, i) {
-    var accountName = (tag.textContent || '').replace(/✕/g,'').trim();
-    tgtNames.forEach(function(tgtName) {
-      rows.push('<tr class="' + (rowIdx%2===1 ? 'el-table__row--striped' : '') + '">' +
-        '<td class="el-table__cell">' + campaignName + '</td>' +
-        '<td class="el-table__cell">' + (campaignTypeMap[campaignType] || '转化') + '</td>' +
-        '<td class="el-table__cell">' + strategyMap[deliveryStrategy] + '</td>' +
-        '<td class="el-table__cell">' + btypeMap[budgetType] + '</td>' +
-        '<td class="el-table__cell">' + unitName + '</td>' +
-        '<td class="el-table__cell">' + ocpxMap[ocpx] + '</td>' +
-        '<td class="el-table__cell">OCPM</td>' +
-        '<td class="el-table__cell">' + placements.join('、') + '</td>' +
-        '<td class="el-table__cell">' + unitStartText + '</td>' +
-        '<td class="el-table__cell">' + unitEndText + '</td>' +
-        '<td class="el-table__cell">' + tgtName + '</td>' +
-        '<td class="el-table__cell">' + pubTypeText + '</td>' +
-        '<td class="el-table__cell">' + creativeAgCount + '</td>' +
-        '<td class="el-table__cell">' + creativeAgNames + '</td>' +
-        '</tr>');
-      rowIdx++;
-    });
+  tgtNames.forEach(function(tgtName) {
+    rows.push('<tr class="' + (rowIdx%2===1 ? 'el-table__row--striped' : '') + '">' +
+      '<td class="el-table__cell">' + campaignName + '</td>' +
+      '<td class="el-table__cell">' + (campaignTypeMap[campaignType] || '转化') + '</td>' +
+      '<td class="el-table__cell">' + strategyMap[deliveryStrategy] + '</td>' +
+      '<td class="el-table__cell">' + btypeMap[budgetType] + '</td>' +
+      '<td class="el-table__cell">' + unitName + '</td>' +
+      '<td class="el-table__cell">' + ocpxMap[ocpx] + '</td>' +
+      '<td class="el-table__cell">OCPM</td>' +
+      '<td class="el-table__cell">' + placements.join('、') + '</td>' +
+      '<td class="el-table__cell">' + unitStartText + '</td>' +
+      '<td class="el-table__cell">' + unitEndText + '</td>' +
+      '<td class="el-table__cell">' + tgtName + '</td>' +
+      '<td class="el-table__cell">' + pubTypeText + '</td>' +
+      '<td class="el-table__cell">' + creativeAgCount + '</td>' +
+      '<td class="el-table__cell">' + creativeAgNames + '</td>' +
+    '</tr>');
+    rowIdx++;
   });
   tbody.innerHTML = rows.join('');
-  var accountCount = tags.length;
+  var tagsAll = document.querySelectorAll('#accountTags .account-tag');
+  var accountCount = tagsAll.length;
   var targetingCount = selectedTargetingIds.length || 1;
   var adgroupPlanCount = creativeAdgroups.length || 1;
   var creativeCount = totalMaterialCount || 1;
   var planCount = accountCount * targetingCount;
   var adgroupTotal = planCount * adgroupPlanCount;
   var creativeTotal = accountCount * targetingCount * creativeCount;
-  var stats = document.querySelector('#drawer-batch .el-card__header .fs12');
-  if (stats) stats.innerHTML = '预计生成<b style="color:var(--el-color-text-primary)">' + creativeTotal + '</b>条广告<span style="margin-left:8px">计划数量：<b style="color:var(--el-color-text-primary)">' + planCount + '</b></span><span style="margin-left:8px">广告组数量：<b style="color:var(--el-color-text-primary)">' + adgroupTotal + '</b></span><span style="margin-left:8px">广告数量：<b style="color:var(--el-color-text-primary)">' + creativeTotal + '</b></span>';
+  var statsEl2 = document.querySelector('#drawer-batch .el-card__header .fs12');
+  if (statsEl2) statsEl2.innerHTML = '预计生成<b style="color:var(--el-color-text-primary)">' + creativeTotal + '</b>条广告<span style="margin-left:8px">计划数量：<b style="color:var(--el-color-text-primary)">' + planCount + '</b></span><span style="margin-left:8px">广告组数量：<b style="color:var(--el-color-text-primary)">' + adgroupTotal + '</b></span><span style="margin-left:8px">广告数量：<b style="color:var(--el-color-text-primary)">' + creativeTotal + '</b></span>';
+}
+
+function updatePreviewTable() {
+  renderPreviewTabs();
+  renderPreviewTableForAccount();
 }
 
 // ====== Main Table ======
