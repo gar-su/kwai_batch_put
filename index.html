@@ -693,6 +693,59 @@ button{cursor:pointer;border:none}
   </div>
 </div>
 
+<!-- ====== DRAWER: 选择推广链接 ====== -->
+<div class="el-overlay" id="overlay-promo" onclick="closeDrawer('drawer-promo')"></div>
+<div class="el-drawer rtl" id="drawer-promo" style="width:35%">
+  <div class="el-drawer__header">
+    <div class="f-b-c" style="width:100%">
+      <div class="f-c-c" style="gap:10px">
+        <i class="fs24 cp" onclick="closeDrawer('drawer-promo')">
+          <svg viewBox="0 0 1024 1024" width="24" height="24"><path fill="currentColor" d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z"/></svg>
+        </i>
+        <span class="fs18 fw6">选择推广链接</span>
+      </div>
+    </div>
+  </div>
+  <div class="el-drawer__body">
+    <div style="padding:16px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="el-button el-button--primary el-button--small">新增推广链接</button>
+      <div class="el-input el-input--small" style="width:280px"><div class="el-input__wrapper"><input class="el-input__inner" id="promoSearchInput" placeholder="请输入关键字"></div></div>
+      <button class="el-button el-button--small" style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="searchPromoLinks()">搜索</button>
+      <button class="el-button el-button--small" onclick="resetPromoSearch()">重置</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="el-table">
+        <thead class="el-table__header">
+          <tr>
+            <th class="el-table__cell is-center" style="width:40px"></th>
+            <th class="el-table__cell" style="width:90px">ID</th>
+            <th class="el-table__cell">推广链接名称</th>
+            <th class="el-table__cell" style="width:120px">投放策略</th>
+            <th class="el-table__cell" style="width:100px">语言</th>
+            <th class="el-table__cell" style="width:200px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="promoTableBody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;align-items:center;padding:16px 0;gap:16px;font-size:13px">
+      <span style="color:var(--el-color-text-regular)">共 <b id="promoTotalCount">0</b> 条</span>
+      <select class="select-native" id="promoPageSize" onchange="renderPromoTable()"><option>10条/页</option><option>20条/页</option><option>50条/页</option></select>
+      <div class="pagination-btns" style="display:flex;border:1px solid #d9d9d9;border-radius:4px;overflow:hidden">
+        <button class="page-btn" onclick="promoPrevPage()" style="border-right:1px solid #d9d9d9">‹</button>
+        <button class="page-btn active" id="promoPageBtn1">1</button>
+        <button class="page-btn" id="promoPageBtn2">2</button>
+        <button class="page-btn" id="promoPageBtn3">3</button>
+        <button class="page-btn" onclick="promoNextPage()">›</button>
+      </div>
+    </div>
+  </div>
+  <div class="el-drawer__footer">
+    <button class="el-button el-button--small" onclick="closeDrawer('drawer-promo')">取消</button>
+    <button class="el-button el-button--primary el-button--small" onclick="confirmPromoSelect()">确定</button>
+  </div>
+</div>
+
 <!-- ====== DRAWER: 计划基本信息 ====== -->
 <div class="el-overlay" id="overlay-plan" onclick="closeDrawer('drawer-plan')"></div>
 <div class="el-drawer rtl" id="drawer-plan" style="width:55%">
@@ -729,13 +782,18 @@ button{cursor:pointer;border:none}
         <div style="display:flex;align-items:center;margin-bottom:16px">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">推广对象</label>
           <div class="el-radio-group" id="campaignMarketingType">
-            <label class="el-radio-button el-radio-button--small" style="opacity:0.4;pointer-events:none"><input class="el-radio-button__original-radio" type="radio" name="campaignMarketingType" value="1" onclick="selectRadioBtn(this);onMarketingTypeChange()"><span class="el-radio-button__inner">应用推广</span></label>
+            <label class="el-radio-button el-radio-button--small"><input class="el-radio-button__original-radio" type="radio" name="campaignMarketingType" value="1" onclick="selectRadioBtn(this);onMarketingTypeChange()"><span class="el-radio-button__inner">应用推广</span></label>
             <label class="el-radio-button el-radio-button--small is-active"><input class="el-radio-button__original-radio" type="radio" name="campaignMarketingType" value="2" checked onclick="selectRadioBtn(this);onMarketingTypeChange()"><span class="el-radio-button__inner">网站推广</span></label>
           </div>
         </div>
         <div id="campaignAppRow" hidden style="display:flex;align-items:center;margin-bottom:16px">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">应用选择 <span style="color:#f56c6c">*</span></label>
           <select class="select-native" style="width:300px" id="campaignAppId"><option value="123456">netshort (123456)</option></select>
+        </div>
+        <div id="campaignPromoRow" hidden style="display:flex;align-items:center;margin-bottom:16px">
+          <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">监测链接模版</label>
+          <div class="el-input el-input--small" style="width:240px"><div class="el-input__wrapper"><input class="el-input__inner" id="campaignPromoLink" readonly placeholder="请选择推广链接"></div></div>
+          <button class="el-button el-button--primary el-button--small is-link" style="margin-left:8px;font-size:12px" onclick="openDrawer('drawer-promo')">选择</button>
         </div>
         <div style="display:flex;align-items:center;margin-bottom:16px">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">智能投放</label>
@@ -1455,6 +1513,7 @@ function openDrawer(id) {
   if (id === 'drawer-adgroup') { renderSchedule(); onUnitBudgetTypeChange(); }
   if (id === 'drawer-targeting') initTargetingDropdowns();
   if (id === 'drawer-creative') renderCreativeAdgroups();
+  if (id === 'drawer-promo') renderPromoTable();
 }
 function closeDrawer(id) {
   var overlay = document.getElementById('overlay-' + id.replace('drawer-', ''));
@@ -1679,6 +1738,7 @@ function onBudgetTypeChange() {
 function onMarketingTypeChange() {
   var mt = getRadioVal('campaignMarketingType');
   document.getElementById('campaignAppRow').hidden = mt !== '1';
+  document.getElementById('campaignPromoRow').hidden = mt !== '1';
   var landingRow = document.getElementById('unitLandingPageRow');
   var pixelRow = document.getElementById('unitPixelRow');
   if (landingRow) landingRow.hidden = mt !== '2';
@@ -2685,7 +2745,8 @@ function handleSavePlan() {
     '<div><span style="color:var(--el-color-text-secondary)">营销目标：</span>转化</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">推广对象：</span>' + (getRadioVal('campaignMarketingType')==='1'?'应用推广':'网站推广') + '</div>' +
     (getRadioVal('campaignMarketingType')==='1'
-      ? '<div><span style="color:var(--el-color-text-secondary)">应用：</span>netshort (' + document.getElementById('campaignAppId').value + ')</div>'
+      ? '<div><span style="color:var(--el-color-text-secondary)">应用：</span>netshort (' + document.getElementById('campaignAppId').value + ')</div>' +
+        '<div><span style="color:var(--el-color-text-secondary)">监测链接模版：</span>' + (document.getElementById('campaignPromoLink').value || '-') + '</div>'
       : '') +
     '<div><span style="color:var(--el-color-text-secondary)">出价策略：</span>' + strategyMap[strategy] + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">CBO：</span>' + cboText + '</div>' +
@@ -2733,6 +2794,115 @@ function handleSavePlan() {
 function selectTemplate() {
   closeDrawer('drawer-template');
   showMsg('模板已选择', 'success');
+}
+
+// ====== Promo Link Selector ======
+var promoLinkData = [
+  { id: '171769', name: '测试', strategy: '直投', language: '英文' },
+  { id: '162508', name: 'meta_NAFBUAAAAQ (新业务形态)_test_kahui', strategy: 'W2A', language: '越南语' },
+  { id: '159856', name: '30years_test_kahui', strategy: 'W2A', language: '英文' },
+  { id: '147369', name: 'test_sjh', strategy: 'W2A', language: '英文' }
+];
+var promoFilteredData = promoLinkData.slice();
+var promoCurrentPage = 1;
+var _selectedPromoId = '171769'; // default selected
+
+function renderPromoTable() {
+  var tbody = document.getElementById('promoTableBody');
+  var pageSize = parseInt(document.getElementById('promoPageSize').value) || 10;
+  var total = promoFilteredData.length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (promoCurrentPage > totalPages) promoCurrentPage = totalPages;
+  var start = (promoCurrentPage - 1) * pageSize;
+  var page = promoFilteredData.slice(start, start + pageSize);
+
+  tbody.innerHTML = page.map(function(row) {
+    var checked = row.id === _selectedPromoId ? ' checked' : '';
+    return '<tr>' +
+      '<td class="el-table__cell is-center"><input type="radio" name="promoSelect" value="' + row.id + '"' + checked + ' onchange="onPromoRadioChange(\'' + row.id + '\')"></td>' +
+      '<td class="el-table__cell">' + row.id + '</td>' +
+      '<td class="el-table__cell">' + escHtml(row.name) + '</td>' +
+      '<td class="el-table__cell">' + row.strategy + '</td>' +
+      '<td class="el-table__cell">' + row.language + '</td>' +
+      '<td class="el-table__cell">' +
+        '<span class="op-link op-modify" style="cursor:pointer;color:var(--el-color-primary);margin-right:16px" onclick="event.stopPropagation()">修改</span>' +
+        '<span class="op-link op-copy" style="cursor:pointer;color:#fa8c16;margin-right:16px" onclick="event.stopPropagation()">复制</span>' +
+        '<span class="op-link op-delete" style="cursor:pointer;color:#ff4d4f" onclick="event.stopPropagation()">删除</span>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('promoTotalCount').textContent = total;
+  // Update pagination buttons
+  var btn1 = document.getElementById('promoPageBtn1');
+  var btn2 = document.getElementById('promoPageBtn2');
+  var btn3 = document.getElementById('promoPageBtn3');
+  [btn1, btn2, btn3].forEach(function(b, i) {
+    var p = i + 1;
+    if (p <= totalPages) {
+      b.style.display = '';
+      b.textContent = p;
+      b.classList.toggle('active', p === promoCurrentPage);
+    } else {
+      b.style.display = 'none';
+    }
+  });
+}
+
+function onPromoRadioChange(id) {
+  _selectedPromoId = id;
+}
+
+function searchPromoLinks() {
+  var kw = (document.getElementById('promoSearchInput').value || '').trim().toLowerCase();
+  promoFilteredData = kw ? promoLinkData.filter(function(r) {
+    return r.name.toLowerCase().indexOf(kw) !== -1 || r.id.indexOf(kw) !== -1;
+  }) : promoLinkData.slice();
+  promoCurrentPage = 1;
+  renderPromoTable();
+}
+
+function resetPromoSearch() {
+  document.getElementById('promoSearchInput').value = '';
+  promoFilteredData = promoLinkData.slice();
+  promoCurrentPage = 1;
+  renderPromoTable();
+}
+
+function promoPrevPage() {
+  if (promoCurrentPage > 1) {
+    promoCurrentPage--;
+    renderPromoTable();
+  }
+}
+
+function promoNextPage() {
+  var pageSize = parseInt(document.getElementById('promoPageSize').value) || 10;
+  var totalPages = Math.max(1, Math.ceil(promoFilteredData.length / pageSize));
+  if (promoCurrentPage < totalPages) {
+    promoCurrentPage++;
+    renderPromoTable();
+  }
+}
+
+function confirmPromoSelect() {
+  var selected = promoLinkData.filter(function(r) { return r.id === _selectedPromoId; })[0];
+  if (!selected) {
+    showMsg('请选择一条推广链接', 'warning');
+    return;
+  }
+  // Validate: delivery strategy must match marketing type
+  var mt = getRadioVal('campaignMarketingType');
+  if (mt === '1' && selected.strategy !== '直投') {
+    showMsg('投放策略为「' + selected.strategy + '」的链接要求推广对象为「网站推广」，请先在计划基本信息中切换推广对象', 'warning');
+    return;
+  }
+  if (mt === '2' && selected.strategy !== 'W2A') {
+    showMsg('投放策略为「' + selected.strategy + '」的链接要求推广对象为「应用推广」，请先在计划基本信息中切换推广对象', 'warning');
+    return;
+  }
+  document.getElementById('campaignPromoLink').value = selected.name;
+  closeDrawer('drawer-promo');
 }
 
 // ====== Preview Table (inside drawer) ======
