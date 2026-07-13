@@ -593,8 +593,9 @@ button{cursor:pointer;border:none}
 
     </div>
 
-    <!-- 发布身份配置 + 预览区 -->
+    <!-- 应用选择 + 发布身份配置 + 预览区 -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <button class="el-button el-button--small" id="btnAppConfig" hidden style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="openAppConfigDialog()">应用选择配置</button>
       <button class="el-button el-button--small" style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="openPublisherConfigDialog()">发布身份配置</button>
     </div>
     <div class="el-card is-never-shadow">
@@ -785,10 +786,6 @@ button{cursor:pointer;border:none}
             <label class="el-radio-button el-radio-button--small"><input class="el-radio-button__original-radio" type="radio" name="campaignMarketingType" value="1" onclick="selectRadioBtn(this);onMarketingTypeChange()"><span class="el-radio-button__inner">应用推广</span></label>
             <label class="el-radio-button el-radio-button--small is-active"><input class="el-radio-button__original-radio" type="radio" name="campaignMarketingType" value="2" checked onclick="selectRadioBtn(this);onMarketingTypeChange()"><span class="el-radio-button__inner">网站推广</span></label>
           </div>
-        </div>
-        <div id="campaignAppRow" hidden style="display:flex;align-items:center;margin-bottom:16px">
-          <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">应用选择 <span style="color:#f56c6c">*</span></label>
-          <select class="select-native" style="width:300px" id="campaignAppId"><option value="123456">netshort (123456)</option></select>
         </div>
         <div id="campaignPromoRow" hidden style="display:flex;align-items:center;margin-bottom:16px">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">监测链接模版</label>
@@ -1468,6 +1465,34 @@ button{cursor:pointer;border:none}
   </div>
 </div>
 
+<!-- ====== DIALOG: 应用选择配置 ====== -->
+<div class="el-dialog-overlay" id="dialogAppOverlay" onclick="if(event.target===this)closeDialog('dialogApp')">
+  <div class="el-dialog" id="dialogApp" style="width:600px">
+    <div class="el-dialog__header">
+      <span>应用选择配置</span>
+      <span class="el-dialog__close" onclick="closeDialog('dialogApp')">×</span>
+    </div>
+    <div class="el-dialog__body">
+      <div style="margin-bottom:10px;font-size:12px;color:var(--el-color-text-secondary)">为每个账户选择对应的 Kwai 应用，未配置的账户默认使用 netshort</div>
+      <div style="border:1px solid var(--el-border-color-light);border-radius:8px;overflow:hidden">
+        <table class="el-table">
+          <thead class="el-table__header">
+            <tr>
+              <th class="el-table__cell is-center" style="width:40%">账户</th>
+              <th class="el-table__cell is-center">应用</th>
+            </tr>
+          </thead>
+          <tbody id="appConfigTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="el-dialog__footer">
+      <button class="el-button el-button--small" onclick="closeDialog('dialogApp')">取消</button>
+      <button class="el-button el-button--primary el-button--small" onclick="confirmAppConfig()">确定</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== DIALOG: 发布身份配置 ====== -->
 <div class="el-dialog-overlay" id="dialogPublisherOverlay" onclick="if(event.target===this)closeDialog('dialogPublisher')">
   <div class="el-dialog" id="dialogPublisher" style="width:700px">
@@ -1737,8 +1762,8 @@ function onBudgetTypeChange() {
 
 function onMarketingTypeChange() {
   var mt = getRadioVal('campaignMarketingType');
-  document.getElementById('campaignAppRow').hidden = mt !== '1';
   document.getElementById('campaignPromoRow').hidden = mt !== '1';
+  document.getElementById('btnAppConfig').hidden = mt !== '1';
   var landingRow = document.getElementById('unitLandingPageRow');
   var pixelRow = document.getElementById('unitPixelRow');
   if (landingRow) landingRow.hidden = mt !== '2';
@@ -2307,6 +2332,7 @@ updateConfigButtons();
 
 // ====== Account Publisher Config ======
 var accountPublisherConfig = {}; // { accountKey: { type:'native'|'custom', identityVal, accountVal } }
+var accountAppConfig = {}; // { accountKey: { appId, appName } }
 var _activePreviewTab = null;
 
 function getAccountKey(el) {
@@ -2316,6 +2342,48 @@ function getAccountKey(el) {
 function getAccountPublisherType(accountKey) {
   var cfg = accountPublisherConfig[accountKey];
   return cfg ? cfg.type : 'native';
+}
+
+// ====== App Config per Account ======
+function openAppConfigDialog() {
+  renderAppConfigTable();
+  openDialog('dialogApp');
+}
+
+function renderAppConfigTable() {
+  var tbody = document.getElementById('appConfigTableBody');
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  if (!tags.length) {
+    tbody.innerHTML = '<tr><td class="el-table__cell" colspan="2" style="padding:40px;text-align:center;color:var(--el-color-text-placeholder)">暂无账户，请先在账号卡片中添加账户</td></tr>';
+    return;
+  }
+  tbody.innerHTML = Array.from(tags).map(function(tag) {
+    var key = getAccountKey(tag);
+    var cfg = accountAppConfig[key] || { appId: '123456', appName: 'netshort' };
+    return '<tr>' +
+      '<td class="el-table__cell">' + key + '</td>' +
+      '<td class="el-table__cell">' +
+        '<select class="select-native" style="width:300px" id="appSelect_' + key.replace(/[^a-zA-Z0-9]/g,'_') + '">' +
+          '<option value="123456"' + (cfg.appId === '123456' ? ' selected' : '') + '>netshort (123456)</option>' +
+        '</select>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function confirmAppConfig() {
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  tags.forEach(function(tag) {
+    var key = getAccountKey(tag);
+    var safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+    var sel = document.getElementById('appSelect_' + safeKey);
+    if (sel) {
+      accountAppConfig[key] = { appId: sel.value, appName: sel.options[sel.selectedIndex].text.split(' (')[0] };
+    }
+  });
+  closeDialog('dialogApp');
+  updatePreviewTable();
+  showMsg('应用选择配置已保存', 'success');
 }
 
 function openPublisherConfigDialog() {
@@ -2745,7 +2813,7 @@ function handleSavePlan() {
     '<div><span style="color:var(--el-color-text-secondary)">营销目标：</span>转化</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">推广对象：</span>' + (getRadioVal('campaignMarketingType')==='1'?'应用推广':'网站推广') + '</div>' +
     (getRadioVal('campaignMarketingType')==='1'
-      ? '<div><span style="color:var(--el-color-text-secondary)">应用：</span>netshort (' + document.getElementById('campaignAppId').value + ')</div>' +
+      ? '<div><span style="color:var(--el-color-text-secondary)">应用：</span>按账户配置</div>' +
         '<div><span style="color:var(--el-color-text-secondary)">监测链接模版：</span>' + (document.getElementById('campaignPromoLink').value || '-') + '</div>'
       : '') +
     '<div><span style="color:var(--el-color-text-secondary)">出价策略：</span>' + strategyMap[strategy] + '</div>' +
