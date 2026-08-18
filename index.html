@@ -519,6 +519,7 @@ button{cursor:pointer;border:none}
           <div><span style="color:var(--el-color-text-secondary)">广告分类：</span>效果广告</div>
           <div><span style="color:var(--el-color-text-secondary)">营销目标：</span>转化</div>
           <div><span style="color:var(--el-color-text-secondary)">推广对象：</span>网站推广</div>
+          <div><span style="color:var(--el-color-text-secondary)">像素：</span>按账户配置</div>
           <div><span style="color:var(--el-color-text-secondary)">出价策略：</span>最低转化成本</div>
           <div><span style="color:var(--el-color-text-secondary)">计划名称：</span>testCampaignName</div>
           <div><span style="color:var(--el-color-text-secondary)">预算类型：</span>不限</div>
@@ -536,7 +537,6 @@ button{cursor:pointer;border:none}
         </div>
         <div style="flex:1;padding:12px 14px;font-size:12px;line-height:2;overflow-y:auto" id="configAdgroupData">
           <div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>-</div>
-          <div><span style="color:var(--el-color-text-secondary)">Kwai Pixel：</span>-</div>
           <div><span style="color:var(--el-color-text-secondary)">广告组名称：</span>unitAddName-001</div>
           <div><span style="color:var(--el-color-text-secondary)">投放版位：</span>信息流、激励</div>
           <div><span style="color:var(--el-color-text-secondary)">转化目标：</span>查看内容</div>
@@ -596,6 +596,7 @@ button{cursor:pointer;border:none}
     <!-- 应用选择 + 发布身份配置 + 预览区 -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <button class="el-button el-button--small" id="btnAppConfig" hidden style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="openAppConfigDialog()">应用选择配置</button>
+      <button class="el-button el-button--small" id="btnPixelConfig" style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="openPixelConfigDialog()">像素配置</button>
       <button class="el-button el-button--small" style="border-color:var(--el-color-primary);color:var(--el-color-primary)" onclick="openPublisherConfigDialog()">发布身份配置</button>
     </div>
     <div class="el-card is-never-shadow">
@@ -863,13 +864,6 @@ button{cursor:pointer;border:none}
         <div style="display:flex;align-items:center;margin-bottom:16px" id="unitLandingPageRow">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">落地页链接</label>
           <div class="el-input el-input--small" style="width:300px"><div class="el-input__wrapper"><input class="el-input__inner" id="unitLandingPageUrl" placeholder="请输入落地页链接"></div></div>
-        </div>
-        <div style="display:flex;align-items:center;margin-bottom:0" id="unitPixelRow">
-          <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">Kwai Pixel</label>
-          <select class="select-native" style="width:300px" id="unitPixelId">
-            <option value="">请选择Pixel</option>
-            <option value="311924809465503">快手短剧 (311924809465503)</option>
-          </select>
         </div>
         <div style="display:flex;align-items:center;margin-bottom:0">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">投放版位</label>
@@ -1493,6 +1487,34 @@ button{cursor:pointer;border:none}
   </div>
 </div>
 
+<!-- ====== DIALOG: 像素配置 ====== -->
+<div class="el-dialog-overlay" id="dialogPixelOverlay" onclick="if(event.target===this)closeDialog('dialogPixel')">
+  <div class="el-dialog" id="dialogPixel" style="width:600px">
+    <div class="el-dialog__header">
+      <span>像素配置</span>
+      <span class="el-dialog__close" onclick="closeDialog('dialogPixel')">×</span>
+    </div>
+    <div class="el-dialog__body">
+      <div style="margin-bottom:10px;font-size:12px;color:var(--el-color-text-secondary)">为每个账户选择对应的 Kwai Pixel，未配置的账户默认使用快手短剧</div>
+      <div style="border:1px solid var(--el-border-color-light);border-radius:8px;overflow:hidden">
+        <table class="el-table">
+          <thead class="el-table__header">
+            <tr>
+              <th class="el-table__cell is-center" style="width:40%">账户</th>
+              <th class="el-table__cell is-center">Kwai Pixel</th>
+            </tr>
+          </thead>
+          <tbody id="pixelConfigTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="el-dialog__footer">
+      <button class="el-button el-button--small" onclick="closeDialog('dialogPixel')">取消</button>
+      <button class="el-button el-button--primary el-button--small" onclick="confirmPixelConfig()">确定</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== DIALOG: 发布身份配置 ====== -->
 <div class="el-dialog-overlay" id="dialogPublisherOverlay" onclick="if(event.target===this)closeDialog('dialogPublisher')">
   <div class="el-dialog" id="dialogPublisher" style="width:700px">
@@ -1764,10 +1786,9 @@ function onMarketingTypeChange() {
   var mt = getRadioVal('campaignMarketingType');
   document.getElementById('campaignPromoRow').hidden = mt !== '1';
   document.getElementById('btnAppConfig').hidden = mt !== '1';
+  document.getElementById('btnPixelConfig').hidden = mt !== '2';
   var landingRow = document.getElementById('unitLandingPageRow');
-  var pixelRow = document.getElementById('unitPixelRow');
   if (landingRow) landingRow.hidden = mt !== '2';
-  if (pixelRow) pixelRow.hidden = mt !== '2';
 }
 
 // 出价策略+转化目标联动控制出价字段显隐
@@ -1971,8 +1992,7 @@ function handleSaveAdgroup() {
   var dataEl = document.getElementById('configAdgroupData');
   dataEl.innerHTML =
     (getRadioVal('campaignMarketingType') === '2'
-      ? '<div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>' + (document.getElementById('unitLandingPageUrl').value || '-') + '</div>' +
-        '<div><span style="color:var(--el-color-text-secondary)">Kwai Pixel：</span>' + (document.getElementById('unitPixelId').value || '-') + '</div>'
+      ? '<div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>' + (document.getElementById('unitLandingPageUrl').value || '-') + '</div>'
       : '') +
     '<div><span style="color:var(--el-color-text-secondary)">广告组名称：</span>' + (document.getElementById('unitName').value || '-') + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">投放版位：</span>' + (placements.join('、') || '-') + '</div>' +
@@ -2333,6 +2353,7 @@ updateConfigButtons();
 // ====== Account Publisher Config ======
 var accountPublisherConfig = {}; // { accountKey: { type:'native'|'custom', identityVal, accountVal } }
 var accountAppConfig = {}; // { accountKey: { appId, appName } }
+var accountPixelConfig = {}; // { accountKey: { pixelId, pixelName } }
 var _activePreviewTab = null;
 
 function getAccountKey(el) {
@@ -2384,6 +2405,49 @@ function confirmAppConfig() {
   closeDialog('dialogApp');
   updatePreviewTable();
   showMsg('应用选择配置已保存', 'success');
+}
+
+// ====== Pixel Config per Account ======
+function openPixelConfigDialog() {
+  renderPixelConfigTable();
+  openDialog('dialogPixel');
+}
+
+function renderPixelConfigTable() {
+  var tbody = document.getElementById('pixelConfigTableBody');
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  if (!tags.length) {
+    tbody.innerHTML = '<tr><td class="el-table__cell" colspan="2" style="padding:40px;text-align:center;color:var(--el-color-text-placeholder)">暂无账户，请先在账号卡片中添加账户</td></tr>';
+    return;
+  }
+  tbody.innerHTML = Array.from(tags).map(function(tag) {
+    var key = getAccountKey(tag);
+    var safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+    var cfg = accountPixelConfig[key] || { pixelId: '311924809465503', pixelName: '快手短剧' };
+    return '<tr>' +
+      '<td class="el-table__cell">' + key + '</td>' +
+      '<td class="el-table__cell">' +
+        '<select class="select-native" style="width:300px" id="pixelSelect_' + safeKey + '">' +
+          '<option value="311924809465503"' + (cfg.pixelId === '311924809465503' ? ' selected' : '') + '>快手短剧 (311924809465503)</option>' +
+        '</select>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function confirmPixelConfig() {
+  var tags = document.querySelectorAll('#accountTags .account-tag');
+  tags.forEach(function(tag) {
+    var key = getAccountKey(tag);
+    var safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+    var sel = document.getElementById('pixelSelect_' + safeKey);
+    if (sel) {
+      accountPixelConfig[key] = { pixelId: sel.value, pixelName: sel.options[sel.selectedIndex].text.split(' (')[0] };
+    }
+  });
+  closeDialog('dialogPixel');
+  updatePreviewTable();
+  showMsg('像素配置已保存', 'success');
 }
 
 function openPublisherConfigDialog() {
@@ -2815,7 +2879,7 @@ function handleSavePlan() {
     (getRadioVal('campaignMarketingType')==='1'
       ? '<div><span style="color:var(--el-color-text-secondary)">应用：</span>按账户配置</div>' +
         '<div><span style="color:var(--el-color-text-secondary)">监测链接模版：</span>' + (document.getElementById('campaignPromoLink').value || '-') + '</div>'
-      : '') +
+      : '<div><span style="color:var(--el-color-text-secondary)">像素：</span>按账户配置</div>') +
     '<div><span style="color:var(--el-color-text-secondary)">出价策略：</span>' + strategyMap[strategy] + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">CBO：</span>' + cboText + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">计划名称：</span>' + (document.getElementById('campaignName').value || '-') + '</div>' +
@@ -2828,8 +2892,7 @@ function handleSavePlan() {
     var mt = getRadioVal('campaignMarketingType');
     adgroupEl.innerHTML =
       (mt === '2'
-        ? '<div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>-</div>' +
-          '<div><span style="color:var(--el-color-text-secondary)">Kwai Pixel：</span>-</div>'
+        ? '<div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>-</div>'
         : '') +
       '<div><span style="color:var(--el-color-text-secondary)">广告组名称：</span>unitAddName-001</div>' +
       '<div><span style="color:var(--el-color-text-secondary)">投放版位：</span>信息流、激励</div>' +
