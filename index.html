@@ -861,9 +861,38 @@ button{cursor:pointer;border:none}
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">广告组名称</label>
           <div class="el-input el-input--small w300"><div class="el-input__wrapper"><input class="el-input__inner" placeholder="请输入广告组名称" id="unitName" value="unitAddName-001" maxlength="100"></div></div>
         </div>
-        <div style="display:flex;align-items:center;margin-bottom:16px" id="unitLandingPageRow">
-          <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">落地页链接</label>
-          <div class="el-input el-input--small" style="width:300px"><div class="el-input__wrapper"><input class="el-input__inner" id="unitLandingPageUrl" placeholder="请输入落地页链接"></div></div>
+        <div style="display:flex;align-items:flex-start;margin-bottom:16px" id="unitLandingPageRow">
+          <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular);padding-top:5px">短剧来源</label>
+          <div>
+            <div class="el-radio-group" id="unitDramaSource">
+              <label class="el-radio-button el-radio-button--small is-active"><input class="el-radio-button__original-radio" type="radio" name="unitDramaSource" value="link" checked onclick="selectRadioBtn(this);onDramaSourceChange()"><span class="el-radio-button__inner">落地页链接</span></label>
+              <label class="el-radio-button el-radio-button--small"><input class="el-radio-button__original-radio" type="radio" name="unitDramaSource" value="drama" onclick="selectRadioBtn(this);onDramaSourceChange()"><span class="el-radio-button__inner">短剧</span></label>
+            </div>
+            <div id="unitLinkMode" style="margin-top:8px">
+              <div class="el-input el-input--small" style="width:300px"><div class="el-input__wrapper"><input class="el-input__inner" id="unitLandingPageUrl" placeholder="请输入落地页链接"></div></div>
+            </div>
+            <div id="unitDramaMode" hidden style="margin-top:8px">
+              <div style="display:flex;align-items:center;margin-bottom:12px">
+                <label style="width:80px;text-align:right;padding-right:8px;font-size:12px;color:var(--el-color-text-regular)">短剧授权账号</label>
+                <div class="el-input el-input--small" style="width:300px"><div class="el-input__wrapper"><input class="el-input__inner" id="unitDramaAccount" placeholder="请输入短剧授权账号"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;margin-bottom:12px">
+                <label style="width:80px;text-align:right;padding-right:8px;font-size:12px;color:var(--el-color-text-regular)">推广剧集选择</label>
+                <div class="el-input el-input--small" style="width:300px"><div class="el-input__wrapper"><input class="el-input__inner" id="unitDramaSeries" placeholder="请输入推广剧集"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;margin-bottom:12px">
+                <label style="width:80px;text-align:right;padding-right:8px;font-size:12px;color:var(--el-color-text-regular)">推广页样式</label>
+                <div class="el-radio-group" id="unitDramaPageStyle">
+                  <label class="el-radio-button el-radio-button--small is-active"><input class="el-radio-button__original-radio" type="radio" name="unitDramaPageStyle" value="0" checked onclick="selectRadioBtn(this);onDramaPageStyleChange()"><span class="el-radio-button__inner">投放详情页</span></label>
+                  <label class="el-radio-button el-radio-button--small"><input class="el-radio-button__original-radio" type="radio" name="unitDramaPageStyle" value="1" onclick="selectRadioBtn(this);onDramaPageStyleChange()"><span class="el-radio-button__inner">投放播放页</span></label>
+                </div>
+              </div>
+              <div id="unitDramaStartRow" hidden style="display:flex;align-items:center">
+                <label style="width:80px;text-align:right;padding-right:8px;font-size:12px;color:var(--el-color-text-regular)">起播集数</label>
+                <div class="el-input el-input--small" style="width:300px"><div class="el-input__wrapper"><input class="el-input__inner" id="unitDramaStartEp" placeholder="请输入起播集数"></div></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;margin-bottom:0">
           <label style="width:140px;text-align:right;padding-right:12px;font-size:12px;color:var(--el-color-text-regular)">投放版位</label>
@@ -1791,6 +1820,18 @@ function onMarketingTypeChange() {
   if (landingRow) landingRow.hidden = mt !== '2';
 }
 
+// 广告组「短剧来源」:落地页链接 / 短剧 两种模式切换
+function onDramaSourceChange() {
+  var drama = getRadioVal('unitDramaSource') === 'drama';
+  document.getElementById('unitLinkMode').hidden = drama;
+  document.getElementById('unitDramaMode').hidden = !drama;
+}
+
+// 推广页样式:投放播放页时才显示起播集数
+function onDramaPageStyleChange() {
+  document.getElementById('unitDramaStartRow').hidden = getRadioVal('unitDramaPageStyle') !== '1';
+}
+
 // 出价策略+转化目标联动控制出价字段显隐
 // 最低转化成本(3): 全部不显示; 成本上限(4): 103/104/105/106/123→bid, 130→roiRatio
 function onOcpxChange() {
@@ -1947,6 +1988,13 @@ function handleSaveAdgroup() {
   var placements = [];
   if (document.getElementById('unitPlacement1').checked) placements.push('信息流');
   if (document.getElementById('unitPlacement5').checked) placements.push('激励');
+  if (getRadioVal('unitDramaSource') === 'drama') {
+    if (!document.getElementById('unitDramaAccount').value.trim()) { showMsg('请输入短剧授权账号', 'warning'); return; }
+    if (!document.getElementById('unitDramaSeries').value.trim()) { showMsg('请输入推广剧集', 'warning'); return; }
+    if (getRadioVal('unitDramaPageStyle') === '1' && !document.getElementById('unitDramaStartEp').value.trim()) {
+      showMsg('请输入起播集数', 'warning'); return;
+    }
+  }
   var budgetType = getRadioVal('unitBudgetType');
   if (budgetType === '2') {
     var dayVal = Number(document.getElementById('unitDayBudget').value) || 0;
@@ -1989,10 +2037,19 @@ function handleSaveAdgroup() {
     endText = '持续投放';
   }
   var timeScheduleText = getSchedulePreview();
+  var isDrama = getRadioVal('unitDramaSource') === 'drama';
+  var dramaStyleText = getRadioVal('unitDramaPageStyle') === '1'
+    ? '投放播放页（起播集数 ' + (document.getElementById('unitDramaStartEp').value || '-') + '）'
+    : '投放详情页';
   var dataEl = document.getElementById('configAdgroupData');
   dataEl.innerHTML =
     (getRadioVal('campaignMarketingType') === '2'
-      ? '<div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>' + (document.getElementById('unitLandingPageUrl').value || '-') + '</div>'
+      ? (isDrama
+          ? '<div><span style="color:var(--el-color-text-secondary)">短剧来源：</span>短剧</div>' +
+            '<div><span style="color:var(--el-color-text-secondary)">授权账号：</span>' + (document.getElementById('unitDramaAccount').value || '-') + '</div>' +
+            '<div><span style="color:var(--el-color-text-secondary)">推广剧集：</span>' + (document.getElementById('unitDramaSeries').value || '-') + '</div>' +
+            '<div><span style="color:var(--el-color-text-secondary)">推广页样式：</span>' + dramaStyleText + '</div>'
+          : '<div><span style="color:var(--el-color-text-secondary)">落地页链接：</span>' + (document.getElementById('unitLandingPageUrl').value || '-') + '</div>')
       : '') +
     '<div><span style="color:var(--el-color-text-secondary)">广告组名称：</span>' + (document.getElementById('unitName').value || '-') + '</div>' +
     '<div><span style="color:var(--el-color-text-secondary)">投放版位：</span>' + (placements.join('、') || '-') + '</div>' +
