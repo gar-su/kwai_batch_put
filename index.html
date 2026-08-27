@@ -2856,7 +2856,10 @@ function renderCreativeAdgroups() {
     container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--el-color-text-placeholder);font-size:13px">暂无广告组，请点击下方按钮添加</div>';
     return;
   }
+  // 多账户时不允许「选择作品」，仅支持创建作品
+  var singleAccount = document.querySelectorAll('#accountTags .account-tag').length <= 1;
   container.innerHTML = creativeAdgroups.map(function(item, idx) {
+    if (!singleAccount) item.workType = 'creative';
     var materialsHtml = item.materials.map(function(m, mi) {
       return '<div style="width:100px;flex-shrink:0">' +
         '<div style="width:100px;height:140px;background:#eee;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;justify-content:center;position:relative">' +
@@ -2869,12 +2872,20 @@ function renderCreativeAdgroups() {
     var addBoxStyle = item.materials.length === 0
       ? 'width:100px;height:140px;border:2px dashed #94bfff;display:flex;align-items:center;justify-content:center;font-size:32px;color:#1875ff;cursor:pointer;border-radius:4px;flex-shrink:0'
       : 'width:100px;height:140px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:32px;color:#333;cursor:pointer;border-radius:4px;flex-shrink:0';
+    var workTypeHtml = '';
+    if (singleAccount) {
+      workTypeHtml = '<div class="el-radio-group" style="margin-right:12px">' +
+        '<label class="el-radio-button el-radio-button--small' + (item.workType==='select'?' is-active':'') + '" style="font-size:11px"><input class="el-radio-button__original-radio" type="radio" name="creativeWorkType_' + item._seq + '" value="select"' + (item.workType==='select'?' checked':'') + ' onclick="onCreativeWorkTypeChange(this,' + idx + ',\'select\')"><span class="el-radio-button__inner">选择作品</span></label>' +
+        '<label class="el-radio-button el-radio-button--small' + (item.workType==='create'?' is-active':'') + '" style="font-size:11px"><input class="el-radio-button__original-radio" type="radio" name="creativeWorkType_' + item._seq + '" value="create"' + (item.workType==='create'?' checked':'') + ' onclick="onCreativeWorkTypeChange(this,' + idx + ',\'create\')"><span class="el-radio-button__inner">创建作品</span></label>' +
+        '</div>';
+    }
     return '<div class="el-card is-always-shadow mb15" style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #f0f0f0">' +
         '<div style="display:flex;align-items:center">' +
           '<span style="font-size:15px;color:#222;font-weight:500">广告组' + (idx+1) + '</span>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:14px">' +
+          workTypeHtml +
           '<span style="color:#444;font-size:13px">已选 <b>' + item.materials.length + '</b> 个素材</span>' +
           '<span style="color:#1875ff;cursor:pointer;font-size:16px" title="复制" onclick="copyCreativeAdgroup(' + item._seq + ')">📋</span>' +
           '<span style="color:#f53f3f;cursor:pointer;font-size:16px" title="删除" onclick="removeCreativeAdgroup(' + item._seq + ')">🗑</span>' +
