@@ -1850,6 +1850,38 @@ function onCampaignTypeChange() {
   });
   if (switched) showMsg('短剧模式仅支持网站推广，已自动切换应用推广', 'warning');
   onMarketingTypeChange();
+  onOcpxDramaConstraint();
+}
+
+// 短剧模式转化目标约束:仅 查看内容(103)/注册(104)/ROAS-广告观看价值(130) 可选,其余隐藏
+function onOcpxDramaConstraint() {
+  var isDrama = getRadioVal('campaignCampaignType') === '8';
+  var allowed = {'103':1,'104':1,'130':1};
+  var btns = document.querySelectorAll('#unitOcpxActionType .el-radio-button');
+  var switched = false;
+  btns.forEach(function(btn) {
+    var input = btn.querySelector('input');
+    if (isDrama && !allowed[input.value]) {
+      btn.style.display = 'none';
+      if (btn.classList.contains('is-active')) {
+        btn.classList.remove('is-active');
+        switched = true;
+      }
+    } else {
+      btn.style.display = '';
+    }
+  });
+  if (switched) {
+    btns.forEach(function(btn) {
+      var input = btn.querySelector('input');
+      if (input.value === '103') {
+        btn.classList.add('is-active');
+        input.checked = true;
+      }
+    });
+    showMsg('短剧模式转化目标仅支持 查看内容/注册/ROAS-广告观看价值', 'warning');
+  }
+  onOcpxChange();
 }
 
 // 推广页样式:投放播放页时才显示起播集数
